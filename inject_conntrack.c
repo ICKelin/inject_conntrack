@@ -35,25 +35,6 @@ static int expand_skb(struct sk_buff *skb, int headroom, int tailroom) {
 	return 0;
 }
 
-// force accept pkt
-// dns redirect to local no need to add conntrack
-static int is_accepted_pkt(struct nf_conntrack_tuple *origin_tuple, int daddr, int dport) {
-	char origin_dst_ip[100];
-
-	sprintf(origin_dst_ip, "%d.%d.%d.%d", NET_TO_IP(origin_tuple->dst.u3.ip));
-	//local connect
-	if (strcmp(origin_dst_ip, "192.168.6.123") == 0) {
-		return -1;
-	}
-
-	// TODO refactor this condition
-	if (origin_tuple->src.u3.ip == daddr && origin_tuple->src.u.all == dport) {
-		return -1;
-	}
-
-	return 0;
-}
-
 // tcp
 static int handle_tcp(struct sk_buff *skb){
 	struct iphdr *ip = ip_hdr(skb);
@@ -78,11 +59,6 @@ static int handle_tcp(struct sk_buff *skb){
 	}
 
 	origin_tuple = &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple;
-
-	// force accepted pkt
-	if (is_accepted_pkt(origin_tuple, ip->daddr, tcp->dest) != 0) {
-		return NF_ACCEPT;
-	}
 
 	// empty payload
 	if (origin_len == 0) {
@@ -137,10 +113,6 @@ static int handle_udp(struct sk_buff *skb){
 	}
 
 	origin_tuple = &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple;
-
-	if (is_accepted_pkt(origin_tuple, ip->daddr, udp->dest) != 0) {
-		return NF_ACCEPT;
-	}
 
 	if (origin_len == 0) {
 		return NF_ACCEPT;
