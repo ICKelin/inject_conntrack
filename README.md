@@ -90,7 +90,7 @@ go build -o test_client test.go
 
 nohup ./test_client &
 
-iptables -t nat -I OUTPUT -p tcp --dst 120.25.214.66 -j DNAT --to 192.168.1.102:9987
+iptables -t nat -I OUTPUT -p tcp --dst 120.25.214.66 -j DNAT --to 192.168.1.102:9876
 
 curl http://120.25.214.66
 
