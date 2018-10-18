@@ -20,19 +20,19 @@ static struct nf_conn *get_conntrack(struct sk_buff *skb, enum ip_conntrack_info
 
 // not engouth headroom/tailroom
 // expand skb tailroom
-static int expand_skb(struct sk_buff *skb, int headroom, int tailroom) {
-	pskb_expand_head(skb, headroom, tailroom, GFP_ATOMIC);
-	if (skb == NULL) {
+static struct sk_buff* expand_skb(struct sk_buff *skb, int headroom, int tailroom) {
+	struct sk_buff *nskb = skb_copy_expand(skb, headroom, tailroom, GFP_ATOMIC);
+	if (nskb == NULL) {
 		printk("expand head fail, drop pkt");
-		return -1;
+		return NULL;
 	}
 
-	if (skb_tailroom(skb) < 8) {
+	if (skb_tailroom(nskb) < 8) {
 		printk("expand head too short, drop pkt");
-		return -1;
+		return NULL;
 	}
 
-	return 0;
+	return nskb;
 }
 
 // tcp
@@ -73,7 +73,7 @@ static int handle_tcp(struct sk_buff *skb){
 
 	// expand skb tailroom
 	if (skb_tailroom(skb) < 8) {
-		if (expand_skb(skb, skb_headroom(skb), skb_tailroom(skb) + 40) != 0) {
+		if ((skb = expand_skb(skb, skb_headroom(skb), skb_tailroom(skb) + 40)) == NULL) {
 			return NF_DROP;	
 		}
 	}
